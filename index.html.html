@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Namma-Yantra Share</title>
+
+<!-- PWA Meta -->
+<meta name="application-name" content="Namma-Yantra">
+<meta name="description" content="Peer-to-peer farm machinery rental for Karnataka farmers">
+<meta name="theme-color" content="#2D6A2D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Namma-Yantra">
+<meta name="msapplication-TileColor" content="#2D6A2D">
+<meta name="msapplication-tap-highlight" content="no">
+
+<!-- Manifest (inline via JS blob — no server needed) -->
+<link id="pwa-manifest" rel="manifest">
+
+<!-- Apple Touch Icons (inline SVG → data URI) -->
+<link rel="apple-touch-icon" id="apple-icon">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2D6A2D;
+    --green-dark: #1B4D1B;
+    --green-light: #EAF3DE;
+    --green-mid: #3B6D11;
+    --amber: #FAEEDA;
+    --amber-dark: #633806;
+    --red-light: #FAECE7;
+    --red-dark: #993C1D;
+    --bg: #F2F5EE;
+    --surface: #FFFFFF;
+    --text: #1A1A1A;
+    --muted: #6B7280;
+    --border: #E5E7EB;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  h1,h2,h3 { font-family: 'Sora', sans-serif; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: var(--green);
+    color: white;
+    padding: 16px 20px 20px;
+    flex-shrink: 0;
+  }
+  .header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .header-top h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; opacity: 0.75; margin-top: 1px; }
+  .location-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.18); border-radius: 20px;
+    padding: 5px 12px; font-size: 12px; margin-top: 8px;
+  }
+
+  /* ── SEARCH + FILTERS ── */
+  .search-area { padding: 14px 16px 0; }
+  .search-box {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;
+  }
+  .search-box input {
+    border: none; outline: none; flex: 1; font-size: 14px;
+    font-family: 'DM Sans', sans-serif; background: transparent; color: var(--text);
+  }
+  .search-box svg { color: var(--muted); flex-shrink: 0; }
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface);
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; color: var(--muted);
+  }
+  .chip.active { background: var(--green); border-color: var(--green); color: white; }
+
+  /* ── MACHINE LIST ── */
+  .list-area { padding: 12px 16px; flex: 1; overflow-y: auto; }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; }
+  .machine-card {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 14px;
+    margin-bottom: 10px; cursor: pointer;
+    display: flex; gap: 12px; align-items: flex-start;
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .machine-card:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  .machine-icon {
+    width: 50px; height: 50px; border-radius: 12px;
+    background: var(--green-light); display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; font-size: 26px;
+  }
+  .machine-info { flex: 1; min-width: 0; }
+  .machine-name { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 600; }
+  .machine-owner { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .machine-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .machine-price { font-size: 14px; font-weight: 600; color: var(--green); }
+  .machine-dist { font-size: 11px; color: var(--muted); }
+  .badge {
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+  }
+  .badge-avail { background: var(--green-light); color: var(--green-mid); }
+  .badge-busy  { background: var(--red-light);   color: var(--red-dark); }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    display: flex; background: var(--surface);
+    border-top: 1px solid var(--border); flex-shrink: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 10px 4px 8px; cursor: pointer; border: none; background: transparent;
+    gap: 3px; color: var(--muted); font-size: 10px; font-family: 'DM Sans', sans-serif;
+    transition: color 0.15s;
+  }
+  .nav-btn.active { color: var(--green); }
+  .nav-btn svg { width: 22px; height: 22px; }
+  .add-nav-btn { color: var(--muted); }
+  .add-nav-btn.active { color: var(--green); }
+  .add-nav-circle {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--green); color: white;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: -4px;
+  }
+  .add-nav-circle svg { width: 22px; height: 22px; stroke: white; }
+
+  /* ── DETAIL SCREEN ── */
+  .detail-header {
+    background: var(--green); color: white;
+    padding: 14px 16px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .back-btn {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: rgba(255,255,255,0.2); border: none; color: white;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .detail-body { padding: 16px; flex: 1; overflow-y: auto; }
+  .detail-hero {
+    background: var(--green-light); border-radius: var(--radius);
+    height: 130px; display: flex; align-items: center; justify-content: center;
+    font-size: 72px; margin-bottom: 16px;
+  }
+  .info-card {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); margin-bottom: 12px; overflow: hidden;
+  }
+  .info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .info-val { font-weight: 500; text-align: right; }
+
+  /* ── CALC BOX ── */
+  .calc-card {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 16px; margin-bottom: 14px;
+  }
+  .calc-title { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 14px; }
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .slider-label { font-size: 12px; color: var(--muted); width: 48px; }
+  input[type=range] {
+    flex: 1; accent-color: var(--green); height: 4px; cursor: pointer;
+  }
+  .slider-val { font-size: 13px; font-weight: 600; min-width: 40px; text-align: right; }
+  .total-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;
+  }
+  .total-label { font-size: 13px; color: var(--muted); }
+  .total-amount { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; color: var(--green); }
+
+  /* ── BOOK BUTTON ── */
+  .book-btn {
+    width: 100%; padding: 15px; border-radius: var(--radius);
+    background: var(--green); color: white; border: none;
+    font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s; letter-spacing: 0.2px;
+  }
+  .book-btn:hover { background: var(--green-dark); }
+  .book-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── BOOKINGS SCREEN ── */
+  .bookings-header { background: var(--green); color: white; padding: 16px 20px; flex-shrink: 0; }
+  .bookings-header h2 { font-size: 18px; font-weight: 700; }
+  .booking-card {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 14px; margin-bottom: 10px;
+  }
+  .booking-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .booking-name { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 600; }
+  .booking-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .booking-total { font-size: 13px; font-weight: 600; color: var(--green); margin-top: 4px; }
+  .badge-pending  { background: var(--amber);     color: var(--amber-dark); }
+
+  /* ── LOGIN SCREEN ── */
+  #screen-login {
+    background: var(--green);
+    align-items: center; justify-content: center;
+    padding: 32px 24px;
+  }
+  .login-logo { font-size: 56px; margin-bottom: 16px; }
+  .login-title { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 700; color: white; text-align: center; }
+  .login-sub { font-size: 14px; color: rgba(255,255,255,0.75); text-align: center; margin-top: 6px; margin-bottom: 32px; }
+  .login-card {
+    background: white; border-radius: 20px; padding: 24px; width: 100%; max-width: 360px;
+  }
+  .login-card label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+  .login-input {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid var(--border); font-size: 15px;
+    font-family: 'DM Sans', sans-serif; outline: none; margin-bottom: 14px;
+  }
+  .login-input:focus { border-color: var(--green); }
+  .login-btn {
+    width: 100%; padding: 14px; border-radius: 10px;
+    background: var(--green); color: white; border: none;
+    font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .login-note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+  /* ── SUCCESS SCREEN ── */
+  .success-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; }
+  .success-icon { font-size: 64px; margin-bottom: 16px; }
+  .success-title { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; text-align: center; }
+  .success-sub { font-size: 14px; color: var(--muted); text-align: center; margin-top: 8px; line-height: 1.6; }
+
+  /* ── OWNER SCREEN ── */
+  .owner-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-accept { flex: 1; padding: 9px; border-radius: 8px; background: var(--green); color: white; border: none; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn-decline { flex: 1; padding: 9px; border-radius: 8px; background: var(--red-light); color: var(--red-dark); border: none; font-weight: 600; font-size: 13px; cursor: pointer; }
+
+  /* ── OWNER REQUESTS SCREEN ── */
+  .req-header { background: var(--green); color: white; padding: 16px 20px; flex-shrink: 0; }
+  .req-header h2 { font-size: 18px; font-weight: 700; }
+  .req-card {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 14px; margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .req-card-top { display: flex; align-items: flex-start; gap: 12px; }
+  .req-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--green); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; flex-shrink: 0;
+  }
+  .req-info { flex: 1; min-width: 0; }
+  .req-farmer { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 600; }
+  .req-machine { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .req-location {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--green-mid); margin-top: 4px; font-weight: 500;
+  }
+  .req-details {
+    display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+  }
+  .req-detail-pill {
+    background: var(--bg); border-radius: 6px; padding: 4px 10px;
+    font-size: 11px; color: var(--muted); font-weight: 500;
+  }
+  .req-detail-pill strong { color: var(--text); }
+  .req-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-accept-big {
+    flex: 1; padding: 11px; border-radius: 10px;
+    background: var(--green); color: white; border: none;
+    font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-accept-big:hover { background: var(--green-dark); }
+  .btn-decline-big {
+    flex: 1; padding: 11px; border-radius: 10px;
+    background: var(--red-light); color: var(--red-dark); border: none;
+    font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-decline-big:hover { opacity: 0.8; }
+  .req-done-badge {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-top: 12px;
+  }
+  .req-done-accept { background: var(--green-light); color: var(--green-mid); }
+  .req-done-decline { background: var(--red-light); color: var(--red-dark); }
+  .req-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+
+  /* ── PROFILE (new design) ── */
+  .profile-body { flex: 1; overflow-y: auto; background: var(--bg); }
+  .profile-card-top {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 20px 16px; margin: 12px 16px;
+  }
+  .profile-top-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .profile-avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--green); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; flex-shrink: 0;
+    overflow: hidden;
+  }
+  .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-info-name { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; }
+  .profile-info-phone { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .profile-info-role { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .profile-field-label {
+    font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.3px;
+    position: absolute; top: -8px; left: 10px; background: white; padding: 0 4px;
+  }
+  .profile-field-wrap { position: relative; margin-bottom: 12px; }
+  .profile-field-input {
+    width: 100%; padding: 12px 14px; border: 1px solid var(--border);
+    border-radius: 10px; font-size: 15px; font-family: 'DM Sans', sans-serif;
+    outline: none; background: white; color: var(--text);
+  }
+  .profile-field-input:focus { border-color: var(--green); }
+  .profile-btn-row { display: flex; gap: 10px; margin-top: 4px; }
+  .btn-change-img {
+    flex: 1; padding: 11px; border-radius: 10px; border: 1.5px solid var(--green);
+    background: white; color: var(--green); font-family: 'Sora', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn-save-profile {
+    flex: 2; padding: 11px; border-radius: 10px; border: none;
+    background: var(--green); color: white; font-family: 'Sora', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .profile-save-note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+  .profile-stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); margin: 0 16px 12px; overflow: hidden;
+  }
+  .stat-cell {
+    padding: 16px 8px; text-align: center; border-right: 1px solid var(--border);
+  }
+  .stat-cell:last-child { border-right: none; }
+  .stat-num { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .payment-section { margin: 0 16px 12px; }
+  .payment-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .payment-card {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 14px; margin-bottom: 8px;
+  }
+  .payment-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .payment-name { font-size: 14px; font-weight: 600; flex: 1; }
+  .payment-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .badge-completed { background: #E8F5E9; color: #2E7D32; }
+  .badge-failed { background: var(--red-light); color: var(--red-dark); }
+
+  .empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--green-light); border-top-color: var(--green); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 32px auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── ADD MACHINE FORM (new style matching reference) ── */
+  .add-screen-body { flex: 1; overflow-y: auto; padding: 16px; background: var(--bg); }
+  .add-screen-header { padding: 20px 16px 4px; background: var(--bg); }
+  .add-screen-title { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; }
+  .add-screen-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .add-info-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px; margin-bottom: 12px; }
+  .add-info-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+  .add-type-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .add-type-chip {
+    padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+    background: white; font-size: 13px; font-weight: 600; cursor: pointer;
+    color: var(--muted); transition: all 0.15s;
+  }
+  .add-type-chip.active { background: #EDE7FF; border-color: #7C3AED; color: #7C3AED; }
+  .img-upload-zone {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 36px 16px;
+    text-align: center; cursor: pointer; background: var(--bg); margin-bottom: 16px;
+    transition: border-color 0.15s;
+  }
+  .img-upload-zone:hover { border-color: var(--green); }
+  .img-upload-zone.has-img { padding: 0; overflow: hidden; border-style: solid; border-color: var(--green); }
+  .img-upload-zone img { width: 100%; height: 160px; object-fit: cover; display: block; }
+  .img-upload-title { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 8px; }
+  .img-upload-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .remove-img-btn { font-size: 12px; color: var(--green); font-weight: 600; cursor: pointer; display: block; text-align: center; margin-bottom: 12px; }
+  .add-field-wrap { position: relative; margin-bottom: 14px; }
+  .add-field-label {
+    position: absolute; top: -9px; left: 12px; font-size: 11px; font-weight: 600;
+    color: var(--muted); background: white; padding: 0 4px; letter-spacing: 0.3px;
+  }
+  .add-field-input {
+    width: 100%; padding: 13px 14px; border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 15px; font-family: 'DM Sans', sans-serif;
+    outline: none; background: white; color: var(--text);
+  }
+  .add-field-input:focus { border-color: var(--green); }
+  .add-field-textarea {
+    width: 100%; padding: 13px 14px; border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 15px; font-family: 'DM Sans', sans-serif;
+    outline: none; background: white; color: var(--text); resize: none; min-height: 90px;
+  }
+  .add-field-textarea:focus { border-color: var(--green); }
+  .add-save-btn {
+    width: 100%; padding: 16px; border-radius: 12px; background: var(--green);
+    color: white; border: none; font-family: 'Sora', sans-serif;
+    font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 4px;
+  }
+
+  /* TOAST */
+  .otp-toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #1A1A1A; color: white; padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 500; z-index: 9999; white-space: nowrap;
+    animation: fadeInOut 3.2s forwards;
+  }
+  @keyframes fadeInOut {
+    0%{opacity:0;top:30px} 12%{opacity:1;top:20px} 75%{opacity:1;top:20px} 100%{opacity:0;top:10px}
+  }
+
+  /* LOGIN TABS */
+  .login-tabs {
+    display: flex; border-radius: 10px; background: var(--bg);
+    padding: 4px; margin-bottom: 18px; gap: 4px;
+  }
+  .login-tab {
+    flex: 1; padding: 9px; border-radius: 8px; border: none;
+    font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; background: transparent; color: var(--muted);
+    transition: all 0.15s;
+  }
+  .login-tab.active { background: white; color: var(--green); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+  .login-err { font-size: 12px; color: var(--red-dark); background: var(--red-light); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; display: none; }
+  .login-input-wrap { position: relative; margin-bottom: 14px; }
+  .login-input-wrap label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+  .pw-toggle {
+    position: absolute; right: 12px; bottom: 13px; background: none; border: none;
+    cursor: pointer; color: var(--muted); font-size: 16px; padding: 0; line-height: 1;
+  }
+
+  /* CONDITION CARD */
+  .condition-card {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 16px; margin-bottom: 12px;
+  }
+  .condition-card-title {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .condition-rating-row {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+  }
+  .condition-stars { display: flex; gap: 4px; }
+  .star {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .star-filled { background: #FFF3CD; }
+  .star-empty  { background: var(--bg); opacity: 0.4; }
+  .condition-badge-wrap { display: flex; align-items: center; gap: 8px; }
+  .condition-badge {
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+  }
+  .cond-excellent { background: #E8F5E9; color: #2E7D32; }
+  .cond-good      { background: var(--green-light); color: var(--green-mid); }
+  .cond-fair      { background: var(--amber); color: var(--amber-dark); }
+  .cond-poor      { background: var(--red-light); color: var(--red-dark); }
+  .condition-bar-wrap { margin-bottom: 16px; }
+  .condition-bar-label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--muted); margin-bottom: 5px;
+  }
+  .condition-bar-track {
+    height: 8px; background: var(--bg); border-radius: 99px; overflow: hidden;
+  }
+  .condition-bar-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+  .service-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; background: var(--bg); border-radius: 10px;
+  }
+  .service-label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .service-val   { font-size: 13px; font-weight: 600; color: var(--text); }
+
+  .gps-live-dot {
+    display:inline-block;width:8px;height:8px;border-radius:50%;background:#4CAF50;
+    margin-right:5px;vertical-align:middle;animation:gpsPulse 1.5s ease-in-out infinite;
+  }
+  .gps-searching-dot {
+    display:inline-block;width:8px;height:8px;border-radius:50%;background:#FFC107;
+    margin-right:5px;vertical-align:middle;animation:gpsPulse 0.8s ease-in-out infinite;
+  }
+  .gps-error-dot {
+    display:inline-block;width:8px;height:8px;border-radius:50%;background:#FF5722;
+    margin-right:5px;vertical-align:middle;
+  }
+  @keyframes gpsPulse {
+    0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)}
+  }
+
+  /* BOOKING FILTER TABS */
+  .booking-tabs {
+    display: flex; gap: 0; background: var(--surface);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    padding: 0 16px;
+  }
+  .booking-tab {
+    flex: 1; padding: 11px 4px; text-align: center;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    color: var(--muted); border-bottom: 2.5px solid transparent;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .booking-tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .booking-tab .tab-count {
+    display: inline-block; min-width: 18px; height: 18px;
+    border-radius: 9px; background: var(--bg);
+    font-size: 10px; font-weight: 700; line-height: 18px;
+    text-align: center; margin-left: 4px; padding: 0 4px;
+  }
+  /* ── PWA INSTALL BANNER ── */
+  #pwa-install-banner {
+    display: none;
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    z-index: 9999; width: calc(100% - 32px); max-width: 400px;
+    background: white; border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 16px; border: 1.5px solid var(--green-light);
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+  #pwa-install-banner.show { display: flex; align-items: center; gap: 12px; }
+  .pwa-banner-icon { font-size: 36px; flex-shrink: 0; }
+  .pwa-banner-text { flex: 1; }
+  .pwa-banner-title { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); }
+  .pwa-banner-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .pwa-banner-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .pwa-btn-install {
+    flex: 1; padding: 9px; border-radius: 8px; border: none;
+    background: var(--green); color: white;
+    font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .pwa-btn-dismiss {
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: white; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer;
+  }
+  /* Manual install guide */
+  #pwa-guide-overlay {
+    display: none; position: fixed; inset: 0; z-index: 99999;
+    background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
+  }
+  #pwa-guide-overlay.show { display: flex; }
+  .pwa-guide-sheet {
+    background: white; border-radius: 24px 24px 0 0;
+    padding: 24px 20px 36px; width: 100%; max-width: 480px;
+  }
+  .pwa-guide-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .pwa-guide-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+  .pwa-guide-step {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .pwa-guide-step:last-of-type { border-bottom: none; }
+  .pwa-step-num {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--green);
+    color: white; font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .pwa-step-text { font-size: 13px; line-height: 1.6; color: var(--text); }
+  .pwa-step-text strong { color: var(--green); }
+  .pwa-guide-close {
+    width: 100%; margin-top: 20px; padding: 14px; border-radius: 12px;
+    background: var(--green); color: white; border: none;
+    font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════ PWA INSTALL BANNER ════════ -->
+<div id="pwa-install-banner">
+  <div class="pwa-banner-icon">🚜</div>
+  <div class="pwa-banner-text">
+    <div class="pwa-banner-title">Install Namma-Yantra</div>
+    <div class="pwa-banner-sub">Add to home screen for app-like experience</div>
+    <div class="pwa-banner-actions">
+      <button class="pwa-btn-install" id="pwa-install-btn" onclick="triggerInstall()">⬇ Install App</button>
+      <button class="pwa-btn-dismiss" onclick="dismissBanner()">Not now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MANUAL INSTALL GUIDE (iOS / fallback) ════════ -->
+<div id="pwa-guide-overlay">
+  <div class="pwa-guide-sheet">
+    <div class="pwa-guide-title">📲 Install on your device</div>
+    <div class="pwa-guide-sub" id="pwa-guide-sub">Follow these steps to install the app on your home screen.</div>
+    <div id="pwa-guide-steps"></div>
+    <button class="pwa-guide-close" onclick="closeGuide()">Got it!</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ LOGIN ════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-logo">🚜</div>
+  <div class="login-title">Namma-Yantra Share</div>
+  <div class="login-sub">Peer-to-peer farm machinery rental</div>
+  <div class="login-card">
+
+    <!-- TABS -->
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-signin" onclick="switchLoginTab('signin')">Sign In</button>
+      <button class="login-tab" id="tab-signup" onclick="switchLoginTab('signup')">New User</button>
+    </div>
+
+    <!-- ERROR BOX -->
+    <div class="login-err" id="login-err"></div>
+
+    <!-- SIGN IN FORM -->
+    <div id="login-signin">
+      <div class="login-input-wrap">
+        <label>USERNAME</label>
+        <input class="login-input" id="si-username" placeholder="Your username" type="text" autocomplete="username">
+      </div>
+      <div class="login-input-wrap">
+        <label>PASSWORD</label>
+        <input class="login-input" id="si-password" placeholder="Your password" type="password" autocomplete="current-password" style="padding-right:42px">
+        <button class="pw-toggle" onclick="togglePw('si-password',this)" type="button">👁</button>
+      </div>
+      <button class="login-btn" onclick="doSignIn()">Sign In →</button>
+      <div class="login-note" style="margin-top:10px">Don't have an account? <span style="color:var(--green);font-weight:600;cursor:pointer" onclick="switchLoginTab('signup')">Sign up free</span></div>
+    </div>
+
+    <!-- SIGN UP FORM -->
+    <div id="login-signup" style="display:none">
+      <div class="login-input-wrap">
+        <label>FULL NAME</label>
+        <input class="login-input" id="su-name" placeholder="e.g. Ramesh Patil" type="text">
+      </div>
+      <div class="login-input-wrap">
+        <label>USERNAME</label>
+        <input class="login-input" id="su-username" placeholder="Choose a username" type="text" autocomplete="username">
+      </div>
+      <div class="login-input-wrap">
+        <label>PHONE NUMBER</label>
+        <div style="display:flex;gap:8px">
+          <input class="login-input" value="+91" style="width:60px;margin:0" readonly>
+          <input class="login-input" id="su-phone" placeholder="9876543210" type="tel" style="margin:0;flex:1" maxlength="10">
+        </div>
+      </div>
+      <div class="login-input-wrap" style="margin-top:14px">
+        <label>I AM A</label>
+        <select class="login-input" id="su-role" style="margin:0">
+          <option value="RENTER">Farmer (want to rent machines)</option>
+          <option value="OWNER">Owner (have machines to rent out)</option>
+          <option value="BOTH">Both</option>
+        </select>
+      </div>
+      <div class="login-input-wrap">
+        <label>PASSWORD</label>
+        <input class="login-input" id="su-password" placeholder="Min 6 characters" type="password" autocomplete="new-password" style="padding-right:42px">
+        <button class="pw-toggle" onclick="togglePw('su-password',this)" type="button">👁</button>
+      </div>
+      <div class="login-input-wrap">
+        <label>CONFIRM PASSWORD</label>
+        <input class="login-input" id="su-confirm" placeholder="Repeat password" type="password" autocomplete="new-password" style="padding-right:42px">
+        <button class="pw-toggle" onclick="togglePw('su-confirm',this)" type="button">👁</button>
+      </div>
+      <button class="login-btn" onclick="doSignUp()">Create Account →</button>
+      <div class="login-note" style="margin-top:10px">Already have an account? <span style="color:var(--green);font-weight:600;cursor:pointer" onclick="switchLoginTab('signin')">Sign in</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════ HOME ════════════════════════════════ -->
+<div id="screen-home" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span style="font-size:24px">🚜</span>
+      <div>
+        <h1>Namma-Yantra Share</h1>
+        <div class="header-sub">Machinery rental for every farmer</div>
+      </div>
+    </div>
+    <div class="location-pill">📍 <span id="user-location">Kanakapura, Karnataka</span></div>
+    <div id="gps-coords" style="font-size:10px;opacity:0.6;margin-top:4px;padding-left:2px"></div>
+  </div>
+
+  <div class="search-area">
+    <div class="search-box">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="search-inp" placeholder="Search tractors, tillers…" oninput="filterMachines()" type="search">
+    </div>
+    <div class="chips">
+      <div class="chip active" onclick="setFilter('ALL',this)">All</div>
+      <div class="chip" onclick="setFilter('TRACTOR',this)">🚜 Tractors</div>
+      <div class="chip" onclick="setFilter('TILLER',this)">⚙️ Tillers</div>
+      <div class="chip" onclick="setFilter('HARVESTER',this)">🌾 Harvesters</div>
+      <div class="chip" onclick="setFilter('SPRAYER',this)">💧 Sprayers</div>
+    </div>
+  </div>
+
+  <div class="list-area">
+    <div class="section-label">Available near you</div>
+    <div id="machine-list"><div class="spinner"></div></div>
+  </div>
+
+    <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="showScreen('home')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="nav-btn" onclick="showScreen('bookings')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>Request</button>
+    <button class="nav-btn add-nav-btn" onclick="showScreen('add-machine')"><span class="add-nav-circle"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>Add</button>
+    <button class="nav-btn" onclick="showScreen('profile')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+  </nav>
+</div>
+
+<!-- ════════════════════════════════ DETAIL ════════════════════════════════ -->
+<div id="screen-detail" class="screen">
+  <div class="detail-header">
+    <button class="back-btn" onclick="showScreen('home')">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div>
+      <div id="d-name" style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700"></div>
+      <div id="d-owner" style="font-size:12px;opacity:0.8"></div>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-hero" id="d-hero">🚜</div>
+
+    <!-- Condition Card -->
+    <div class="condition-card">
+      <div class="condition-card-title">🔧 Machine Condition</div>
+      <div class="condition-rating-row">
+        <div class="condition-stars" id="d-stars"></div>
+        <div class="condition-badge-wrap">
+          <span class="condition-badge" id="d-cond-badge"></span>
+        </div>
+      </div>
+      <div class="condition-bar-wrap">
+        <div class="condition-bar-label">
+          <span>Overall Rating</span><span id="d-rating-pct"></span>
+        </div>
+        <div class="condition-bar-track">
+          <div class="condition-bar-fill" id="d-rating-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="service-row">
+        <span class="service-label">📅 Last Service Date</span>
+        <span class="service-val" id="d-service-date"></span>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-row"><span class="info-label">💰 Rate</span><span class="info-val" id="d-rate"></span></div>
+      <div class="info-row"><span class="info-label">📍 Distance</span><span class="info-val" id="d-dist"></span></div>
+      <div class="info-row"><span class="info-label">✅ Status</span><span class="info-val" id="d-status"></span></div>
+    </div>
+
+    <div class="calc-card">
+      <div class="calc-title">Price Calculator</div>
+      <div class="slider-row">
+        <span class="slider-label">Hours</span>
+        <input type="range" min="1" max="12" value="4" id="sl-hours" oninput="recalc()">
+        <span class="slider-val" id="sl-hours-val">4 hrs</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Days</span>
+        <input type="range" min="1" max="7" value="1" id="sl-days" oninput="recalc()">
+        <span class="slider-val" id="sl-days-val">1 day</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">Total cost</span>
+        <span class="total-amount" id="calc-total">₹2,000</span>
+      </div>
+    </div>
+
+    <button class="book-btn" id="btn-book" onclick="sendBooking()">Send Rental Request</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ BOOKINGS ════════════════════════════════ -->
+<div id="screen-bookings" class="screen">
+  <div class="bookings-header">
+    <h2>My Rental Requests</h2>
+    <div style="font-size:12px;opacity:0.75;margin-top:2px">Track all your booking requests</div>
+  </div>
+  <div class="booking-tabs">
+    <div class="booking-tab active" id="tab-all"     onclick="setBookingFilter('ALL',this)">All<span class="tab-count" id="cnt-all">0</span></div>
+    <div class="booking-tab"        id="tab-pending" onclick="setBookingFilter('PENDING',this)">🕐 Pending<span class="tab-count" id="cnt-pending">0</span></div>
+    <div class="booking-tab"        id="tab-accepted" onclick="setBookingFilter('ACCEPTED',this)">✅ Accepted<span class="tab-count" id="cnt-accepted">0</span></div>
+    <div class="booking-tab"        id="tab-declined" onclick="setBookingFilter('DECLINED',this)">❌ Declined<span class="tab-count" id="cnt-declined">0</span></div>
+  </div>
+  <div class="list-area" style="padding-top:14px">
+    <div id="booking-list"></div>
+  </div>
+    <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('home')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="nav-btn active" onclick="showScreen('bookings')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>Request</button>
+    <button class="nav-btn add-nav-btn" onclick="showScreen('add-machine')"><span class="add-nav-circle"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>Add</button>
+    <button class="nav-btn" onclick="showScreen('profile')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+  </nav>
+</div>
+
+<!-- ════════════════════════════ OWNER REQUESTS ════════════════════════════ -->
+<div id="screen-map" class="screen">
+  <div class="req-header">
+    <h2>📋 Incoming Requests</h2>
+    <div style="font-size:12px;opacity:0.75;margin-top:2px">Accept or decline rental requests for your machines</div>
+  </div>
+  <div class="list-area" style="padding-top:14px">
+    <div id="owner-request-list"></div>
+  </div>
+    <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('home')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="nav-btn" onclick="showScreen('bookings')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>Request</button>
+    <button class="nav-btn add-nav-btn active" onclick="showScreen('add-machine')"><span class="add-nav-circle active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>Add</button>
+    <button class="nav-btn" onclick="showScreen('profile')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+  </nav>
+</div>
+
+<!-- ════════════════════════════════ PROFILE ════════════════════════════════ -->
+<div id="screen-profile" class="screen">
+  <div class="profile-body">
+    <!-- top card: avatar + editable fields -->
+    <div class="profile-card-top">
+      <div class="profile-top-row">
+        <div class="profile-avatar" id="prof-avatar" onclick="triggerAvatarUpload()">
+          <span id="prof-initials">RP</span>
+        </div>
+        <div>
+          <div class="profile-info-name" id="prof-name">Ramesh Patil</div>
+          <div class="profile-info-phone" id="prof-phone">9876543210</div>
+          <div class="profile-info-role" id="prof-role">BOTH · Member since 2026</div>
+        </div>
+      </div>
+      <input type="file" id="avatar-file-input" accept="image/*" style="display:none" onchange="handleAvatarChange(event)">
+
+      <div class="profile-field-wrap">
+        <span class="profile-field-label">Change name</span>
+        <input class="profile-field-input" id="edit-name" placeholder="Your full name">
+      </div>
+      <div class="profile-field-wrap">
+        <span class="profile-field-label">Change phone number</span>
+        <input class="profile-field-input" id="edit-phone" placeholder="9876543210" type="tel">
+      </div>
+      <div class="profile-btn-row">
+        <button class="btn-change-img" onclick="triggerAvatarUpload()">Change image</button>
+        <button class="btn-save-profile" onclick="saveProfile()">Save profile</button>
+      </div>
+      <div class="profile-save-note">All updates are saved locally on this device.</div>
+    </div>
+
+    <!-- stats row -->
+    <div class="profile-stats">
+      <div class="stat-cell">
+        <div class="stat-num" id="stat-rented">0</div>
+        <div class="stat-lbl">Rented</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="stat-added">0</div>
+        <div class="stat-lbl">Added</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="stat-payments">0</div>
+        <div class="stat-lbl">Payments</div>
+      </div>
+    </div>
+
+    <!-- payment history -->
+    <div class="payment-section">
+      <div class="payment-title">Payment history</div>
+      <div id="payment-history-list"><div class="empty" style="padding:20px 0">No payments yet.</div></div>
+      <div style="text-align:center;margin-top:12px">
+        <button onclick="doLogout()" style="background:none;border:none;color:var(--red-dark);font-size:13px;font-weight:600;cursor:pointer">🚪 Logout</button>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button onclick="showInstallGuide()" style="background:none;border:none;color:var(--green);font-size:13px;font-weight:600;cursor:pointer">📲 Install as App</button>
+      </div>
+    </div>
+  </div>
+    <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('home')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="nav-btn" onclick="showScreen('bookings')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>Request</button>
+    <button class="nav-btn add-nav-btn" onclick="showScreen('add-machine')"><span class="add-nav-circle"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>Add</button>
+    <button class="nav-btn active" onclick="showScreen('profile')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+  </nav>
+</div>
+
+<!-- ════════════════════════════ ADD MACHINE ════════════════════════════ -->
+<div id="screen-add-machine" class="screen">
+  <div class="add-screen-header">
+    <div class="add-screen-title">List Your Machine</div>
+    <div class="add-screen-sub">Save a new listing locally and see it appear in your farm history.</div>
+  </div>
+  <div class="add-screen-body">
+    <div class="add-info-card">
+      <div class="add-info-title">Machine information</div>
+
+      <!-- type chips -->
+      <div class="add-type-chips">
+        <div class="add-type-chip active" onclick="selectAddType('TRACTOR',this)">Tractors</div>
+        <div class="add-type-chip" onclick="selectAddType('HARVESTER',this)">Harvesters</div>
+        <div class="add-type-chip" onclick="selectAddType('SPRAYER',this)">Sprayers</div>
+        <div class="add-type-chip" onclick="selectAddType('TILLER',this)">Tillers</div>
+      </div>
+
+      <!-- image upload -->
+      <div class="img-upload-zone" id="img-upload-zone" onclick="triggerMachineImg()">
+        <div id="img-placeholder">
+          <div style="font-size:32px">📷</div>
+          <div class="img-upload-title">Tap to add machine image</div>
+          <div class="img-upload-sub">Optional photo from gallery</div>
+        </div>
+        <img id="img-preview" style="display:none;width:100%;height:160px;object-fit:cover">
+      </div>
+      <input type="file" id="machine-img-input" accept="image/*" style="display:none" onchange="handleMachineImg(event)">
+      <span class="remove-img-btn" id="remove-img-btn" style="display:none" onclick="removeMachineImg()">Remove selected image</span>
+
+      <div class="add-field-wrap">
+        <span class="add-field-label">Machine name</span>
+        <input class="add-field-input" id="f-mname" placeholder="e.g. Mahindra 575 DI">
+      </div>
+      <div class="add-field-wrap">
+        <span class="add-field-label">Brand</span>
+        <input class="add-field-input" id="f-brand" placeholder="e.g. Mahindra">
+      </div>
+      <div class="add-field-wrap">
+        <span class="add-field-label">Model</span>
+        <input class="add-field-input" id="f-model" placeholder="e.g. 575 DI">
+      </div>
+      <div class="add-field-wrap">
+        <span class="add-field-label">Hourly rate</span>
+        <input class="add-field-input" id="f-hourly" type="number" placeholder="500">
+      </div>
+      <div class="add-field-wrap">
+        <span class="add-field-label">Daily rate</span>
+        <input class="add-field-input" id="f-daily" type="number" placeholder="3500">
+      </div>
+      <div class="add-field-wrap">
+        <span class="add-field-label">Location / address</span>
+        <input class="add-field-input" id="f-location" placeholder="Village, Taluk, District">
+      </div>
+      <div class="add-field-wrap" style="margin-bottom:0">
+        <span class="add-field-label">Description</span>
+        <textarea class="add-field-textarea" id="f-desc" placeholder="Any details about the machine…"></textarea>
+      </div>
+    </div>
+
+    <button class="add-save-btn" onclick="addMachine()">Save listing locally</button>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('home')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="nav-btn" onclick="showScreen('bookings')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>Request</button>
+    <button class="nav-btn add-nav-btn active" onclick="showScreen('add-machine')"><span class="add-nav-circle active"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>Add</button>
+    <button class="nav-btn" onclick="showScreen('profile')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+  </nav>
+</div>
+<script>
+// ═══════════════════════════ STATE ═══════════════════════════
+let currentUser = null;
+let currentMachine = null;
+let activeFilter = 'ALL';
+let machines = [];
+let bookings = [];
+let userLat = null, userLng = null;
+
+// ═══════════════════════════ DISTANCE UTILS ═══════════════════════════
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function fmtDist(km) {
+  if (km < 1) return (km * 1000).toFixed(0) + ' m';
+  return km.toFixed(1) + ' km';
+}
+
+function updateMachineDistances() {
+  if (userLat == null) return;
+  machines.forEach(m => {
+    if (m.lat && m.lng) {
+      m.distanceKm = parseFloat(haversineKm(userLat, userLng, m.lat, m.lng).toFixed(1));
+    }
+  });
+  machines.sort((a, b) => a.distanceKm - b.distanceKm);
+}
+
+// ═══════════════════════════ SAMPLE DATA ═══════════════════════════
+// Each machine has real Karnataka GPS coordinates
+const sampleMachines = [
+  // ── TRACTORS ──
+  { id:'m1',  emoji:'🚜', name:'Mahindra 575 DI',          type:'TRACTOR',   ownerName:'Ramesh Patil',         ownerPhone:'+919876543210', hourlyRate:500,  dailyRate:3500, distanceKm:1.2, isAvailable:true,  condition:'Good',      lastServiceDate:'Apr 2026', village:'Hubli Taluk',       lat:15.3647, lng:75.1240 },
+  { id:'m5',  emoji:'🚜', name:'Sonalika 750 DI',           type:'TRACTOR',   ownerName:'Meera Joshi',          ownerPhone:'+919876500004', hourlyRate:450,  dailyRate:3000, distanceKm:6.4, isAvailable:true,  condition:'Excellent', lastServiceDate:'May 2026', village:'Raichur Block',     lat:16.2120, lng:77.3566 },
+  { id:'m6',  emoji:'🚜', name:'John Deere 5050 D',         type:'TRACTOR',   ownerName:'Basavaraj Patil',      ownerPhone:'+919845001001', hourlyRate:600,  dailyRate:4200, distanceKm:2.8, isAvailable:true,  condition:'Excellent', lastServiceDate:'May 2026', village:'Kanakapura',     lat:15.4600, lng:75.0200 },
+  { id:'m7',  emoji:'🚜', name:'TAFE 45 DI',                type:'TRACTOR',   ownerName:'Shivappa Hosamani',    ownerPhone:'+919845001002', hourlyRate:420,  dailyRate:2900, distanceKm:4.1, isAvailable:false, condition:'Good',      lastServiceDate:'Feb 2026', village:'Gadag Village',     lat:15.4175, lng:75.6050 },
+  { id:'m8',  emoji:'🚜', name:'Eicher 380',                type:'TRACTOR',   ownerName:'Laxmibai Kulkarni',    ownerPhone:'+919845001003', hourlyRate:380,  dailyRate:2600, distanceKm:7.5, isAvailable:true,  condition:'Fair',      lastServiceDate:'Dec 2025', village:'Haveri District',   lat:14.8000, lng:75.4100 },
+  { id:'m9',  emoji:'🚜', name:'New Holland 3630',          type:'TRACTOR',   ownerName:'Chandrappa Nayak',     ownerPhone:'+919845001004', hourlyRate:550,  dailyRate:3800, distanceKm:3.3, isAvailable:true,  condition:'Good',      lastServiceDate:'Mar 2026', village:'Koppal Taluk',      lat:15.3600, lng:76.1600 },
+  { id:'m10', emoji:'🚜', name:'Kubota MU4501',             type:'TRACTOR',   ownerName:'Prakash Desai',        ownerPhone:'+919845001005', hourlyRate:520,  dailyRate:3600, distanceKm:5.9, isAvailable:true,  condition:'Excellent', lastServiceDate:'May 2026', village:'Bagalkot Taluk',    lat:16.1800, lng:75.6900 },
+  { id:'m11', emoji:'🚜', name:'VST Shakti 165 DI',         type:'TRACTOR',   ownerName:'Annapurna Reddy',      ownerPhone:'+919845001006', hourlyRate:350,  dailyRate:2400, distanceKm:8.2, isAvailable:false, condition:'Fair',      lastServiceDate:'Nov 2025', village:'Bellary Rural',     lat:15.1400, lng:76.9200 },
+  { id:'m12', emoji:'🚜', name:'Mahindra JIVO 245 DI',      type:'TRACTOR',   ownerName:'Suresh Kamble',        ownerPhone:'+919845001007', hourlyRate:310,  dailyRate:2100, distanceKm:1.8, isAvailable:true,  condition:'Good',      lastServiceDate:'Apr 2026', village:'Chitradurga Block', lat:14.2300, lng:76.4000 },
+
+  // ── TILLERS ──
+  { id:'m2',  emoji:'⚙️', name:'Kirloskar Power Tiller',   type:'TILLER',    ownerName:'Savitabai Kulkarni',   ownerPhone:'+919876500001', hourlyRate:300,  dailyRate:2100, distanceKm:2.5, isAvailable:false, condition:'Fair',      lastServiceDate:'Jan 2026', village:'Gadag Village',     lat:15.4175, lng:75.6250 },
+  { id:'m13', emoji:'⚙️', name:'VST Shakti MT 171',        type:'TILLER',    ownerName:'Raju Hosamani',        ownerPhone:'+919845002001', hourlyRate:280,  dailyRate:1900, distanceKm:3.0, isAvailable:true,  condition:'Good',      lastServiceDate:'Apr 2026', village:'Davanagere Taluk',  lat:14.4680, lng:75.9240 },
+  { id:'m14', emoji:'⚙️', name:'Kubota A Series Tiller',   type:'TILLER',    ownerName:'Geetha Patil',         ownerPhone:'+919845002002', hourlyRate:320,  dailyRate:2200, distanceKm:4.7, isAvailable:true,  condition:'Excellent', lastServiceDate:'May 2026', village:'Tumkur Rural',      lat:13.3400, lng:77.1000 },
+  { id:'m15', emoji:'⚙️', name:'Yanmar YK 750',            type:'TILLER',    ownerName:'Mallappa Nayak',       ownerPhone:'+919845002003', hourlyRate:260,  dailyRate:1800, distanceKm:6.1, isAvailable:false, condition:'Fair',      lastServiceDate:'Oct 2025', village:'Hassan District',   lat:13.0000, lng:76.1000 },
+  { id:'m16', emoji:'⚙️', name:'Honda F220 Power Tiller',  type:'TILLER',    ownerName:'Sumitra Desai',        ownerPhone:'+919845002004', hourlyRate:290,  dailyRate:2000, distanceKm:2.2, isAvailable:true,  condition:'Good',      lastServiceDate:'Mar 2026', village:'Mandya Taluk',      lat:12.5220, lng:76.8960 },
+  { id:'m17', emoji:'⚙️', name:'Mahindra Oja Tiller',      type:'TILLER',    ownerName:'Hanumantha Reddy',     ownerPhone:'+919845002005', hourlyRate:310,  dailyRate:2100, distanceKm:5.5, isAvailable:true,  condition:'Excellent', lastServiceDate:'May 2026', village:'Mysuru Rural',      lat:12.2958, lng:76.6394 },
+  { id:'m18', emoji:'⚙️', name:'Krishi Uday 130 DI',       type:'TILLER',    ownerName:'Lakshmi Gowda',        ownerPhone:'+919845002006', hourlyRate:240,  dailyRate:1650, distanceKm:9.0, isAvailable:true,  condition:'Fair',      lastServiceDate:'Jan 2026', village:'Kolar Block',       lat:13.1360, lng:78.1290 },
+
+  // ── SPRAYERS ──
+  { id:'m3',  emoji:'💧', name:'Boom Sprayer 14ft',         type:'SPRAYER',   ownerName:'Gopal Nayak',          ownerPhone:'+919876500002', hourlyRate:200,  dailyRate:1400, distanceKm:3.8, isAvailable:true,  condition:'Excellent', lastServiceDate:'May 2026', village:'Haveri District',   lat:14.7936, lng:75.3985 },
+  { id:'m19', emoji:'💧', name:'Indo Farm Mist Blower',     type:'SPRAYER',   ownerName:'Nagaraj Patil',        ownerPhone:'+919845003001', hourlyRate:180,  dailyRate:1200, distanceKm:2.1, isAvailable:true,  condition:'Good',      lastServiceDate:'Apr 2026', village:'Bidar Village',     lat:17.9140, lng:77.5200 },
+  { id:'m20', emoji:'💧', name:'Aspee Tractor Sprayer',     type:'SPRAYER',   ownerName:'Kavitha Joshi',        ownerPhone:'+919845003002', hourlyRate:220,  dailyRate:1500, distanceKm:4.5, isAvailable:false, condition:'Good',      lastServiceDate:'Feb 2026', village:'Shivamogga Taluk',  lat:13.9299, lng:75.5681 },
+  { id:'m21', emoji:'💧', name:'Excel Power Sprayer 400L',  type:'SPRAYER',   ownerName:'Thimmappa Naik',       ownerPhone:'+919845003003', hourlyRate:250,  dailyRate:1700, distanceKm:6.8, isAvailable:true,  condition:'Excellent', lastServiceDate:'May 2026', village:'Udupi Village',     lat:13.3409, lng:74.7421 },
+  { id:'m22', emoji:'💧', name:'Mahendra Orchard Sprayer',  type:'SPRAYER',   ownerName:'Padmavathi Gowda',     ownerPhone:'+919845003004', hourlyRate:190,  dailyRate:1300, distanceKm:3.5, isAvailable:true,  condition:'Good',      lastServiceDate:'Mar 2026', village:'Yadgir District',   lat:16.7680, lng:77.1380 },
+  { id:'m23', emoji:'💧', name:'Captain Knapsack Sprayer',  type:'SPRAYER',   ownerName:'Irfan Khan',           ownerPhone:'+919845003005', hourlyRate:150,  dailyRate:1000, distanceKm:1.5, isAvailable:true,  condition:'Fair',      lastServiceDate:'Dec 2025', village:'Chikkaballapur',    lat:13.4355, lng:77.7315 },
+  { id:'m24', emoji:'💧', name:'GreenMax Drone Sprayer',    type:'SPRAYER',   ownerName:'Priya Shankar',        ownerPhone:'+919845003006', hourlyRate:800,  dailyRate:5500, distanceKm:7.2, isAvailable:true,  condition:'Excellent', lastServiceDate:'May 2026', village:'Bengaluru Rural',   lat:13.0827, lng:77.5877 },
+
+  // ── HARVESTERS ──
+  { id:'m4',  emoji:'🌾', name:'Claas Crop Tiger 30',       type:'HARVESTER', ownerName:'Vijay Desai',          ownerPhone:'+919876500003', hourlyRate:1200, dailyRate:8000, distanceKm:5.1, isAvailable:true,  condition:'Good',      lastServiceDate:'Mar 2026', village:'Koppal Taluk',      lat:15.3530, lng:76.1549 },
+  { id:'m25', emoji:'🌾', name:'Swaraj Harvester 8100',     type:'HARVESTER', ownerName:'Manjunath Patil',      ownerPhone:'+919845004001', hourlyRate:1100, dailyRate:7500, distanceKm:4.4, isAvailable:true,  condition:'Good',      lastServiceDate:'Apr 2026', village:'Raichur Block',     lat:16.2000, lng:77.3500 },
+  { id:'m26', emoji:'🌾', name:'Mahindra Arjun Harvester',  type:'HARVESTER', ownerName:'Deepa Kulkarni',       ownerPhone:'+919845004002', hourlyRate:1300, dailyRate:9000, distanceKm:8.6, isAvailable:false, condition:'Excellent', lastServiceDate:'May 2026', village:'Bellary Rural',     lat:15.1500, lng:76.9300 },
+];
+
+// ═══════════════════════════ AUTH (username + password) ═══════════════════════════
+
+function showToast(msg) {
+  const old = document.getElementById('otp-toast-el');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.id = 'otp-toast-el';
+  t.className = 'otp-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+function showLoginErr(msg) {
+  const el = document.getElementById('login-err');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function switchLoginTab(tab) {
+  document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('login-signin').style.display = tab === 'signin' ? 'block' : 'none';
+  document.getElementById('login-signup').style.display = tab === 'signup' ? 'block' : 'none';
+  showLoginErr('');
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem('ny_users') || '{}'); } catch(e) { return {}; }
+}
+function saveUsers(obj) { localStorage.setItem('ny_users', JSON.stringify(obj)); }
+
+function doSignUp() {
+  showLoginErr('');
+  const name     = document.getElementById('su-name').value.trim();
+  const username = document.getElementById('su-username').value.trim().toLowerCase();
+  const phone    = document.getElementById('su-phone').value.trim();
+  const role     = document.getElementById('su-role').value;
+  const pw       = document.getElementById('su-password').value;
+  const pw2      = document.getElementById('su-confirm').value;
+
+  if (!name)                          { showLoginErr('⚠️ Please enter your full name.'); return; }
+  if (!username || username.length<3) { showLoginErr('⚠️ Username must be at least 3 characters.'); return; }
+  if (!/^[a-z0-9_]+$/.test(username)) { showLoginErr('⚠️ Username can only contain letters, numbers, and underscores.'); return; }
+  if (!/^[0-9]{10}$/.test(phone))    { showLoginErr('⚠️ Enter a valid 10-digit phone number.'); return; }
+  if (pw.length < 6)                  { showLoginErr('⚠️ Password must be at least 6 characters.'); return; }
+  if (pw !== pw2)                     { showLoginErr('⚠️ Passwords do not match.'); return; }
+
+  const users = getUsers();
+  if (users[username])                { showLoginErr('⚠️ Username already taken. Please choose another.'); return; }
+
+  users[username] = { name, username, phone: '+91' + phone, role, pw };
+  saveUsers(users);
+  showToast('✅ Account created! Welcome, ' + name + '!');
+  _finishLogin(users[username]);
+}
+
+function doSignIn() {
+  showLoginErr('');
+  const username = document.getElementById('si-username').value.trim().toLowerCase();
+  const pw       = document.getElementById('si-password').value;
+
+  if (!username) { showLoginErr('⚠️ Please enter your username.'); return; }
+  if (!pw)       { showLoginErr('⚠️ Please enter your password.'); return; }
+
+  const users = getUsers();
+  const user  = users[username];
+  if (!user)        { showLoginErr('❌ Username not found. Please sign up first.'); return; }
+  if (user.pw !== pw) { showLoginErr('❌ Incorrect password. Please try again.'); return; }
+
+  showToast('👋 Welcome back, ' + user.name + '!');
+  _finishLogin(user);
+}
+
+function _finishLogin(user) {
+  currentUser = { name: user.name, phone: user.phone, role: user.role, village: 'Kanakapura', username: user.username };
+  loadAccountData();
+  updateProfile();
+  showScreen('home');
+  renderMachines();
+  startLiveLocation();
+}
+
+// ═══════════════════════════ PER-ACCOUNT PERSISTENCE ═══════════════════════════
+function acctKey(suffix) {
+  return 'ny_acct_' + (currentUser?.username || 'guest') + '_' + suffix;
+}
+
+function saveAccountData() {
+  if (!currentUser) return;
+  try {
+    // Save only user-added machines (those whose id starts with 'm' + digits only = sample, so we save all machines array but flag user-added ones)
+    const userMachines = machines.filter(m => m._userAdded);
+    localStorage.setItem(acctKey('machines'), JSON.stringify(userMachines));
+    localStorage.setItem(acctKey('bookings'), JSON.stringify(bookings));
+    // Save profile overrides (name, phone, role, avatar)
+    localStorage.setItem(acctKey('profile'), JSON.stringify({
+      name: currentUser.name,
+      phone: currentUser.phone,
+      role: currentUser.role,
+      village: currentUser.village,
+      avatar: avatarImgData || null
+    }));
+  } catch(e) { console.warn('Save failed:', e); }
+}
+
+function loadAccountData() {
+  if (!currentUser) return;
+  try {
+    // Load profile overrides
+    const prof = JSON.parse(localStorage.getItem(acctKey('profile')) || 'null');
+    if (prof) {
+      currentUser.name  = prof.name  || currentUser.name;
+      currentUser.phone = prof.phone || currentUser.phone;
+      currentUser.role  = prof.role  || currentUser.role;
+      currentUser.village = prof.village || 'Kanakapura';
+      if (prof.avatar) {
+        avatarImgData = prof.avatar;
+        // will be applied after DOM is ready via updateProfile
+      } else {
+        avatarImgData = null;
+      }
+    }
+    // Load bookings
+    const savedBookings = JSON.parse(localStorage.getItem(acctKey('bookings')) || 'null');
+    bookings = savedBookings || [];
+    // Load machines: start with sample, then prepend user-added ones
+    const savedMachines = JSON.parse(localStorage.getItem(acctKey('machines')) || 'null');
+    machines = [...(savedMachines || []), ...sampleMachines];
+  } catch(e) {
+    bookings = [];
+    machines = [...sampleMachines];
+  }
+}
+
+function doLogout() {
+  saveAccountData();
+  currentUser = null;
+  avatarImgData = null;
+  bookings = [];
+  machines = [];
+  ['si-username','si-password'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  showLoginErr('');
+  switchLoginTab('signin');
+  showScreen('login');
+}
+
+
+// ======================= LIVE GPS =======================
+let gpsWatchId = null;
+
+function setLocUI(dotClass, line1, line2) {
+  const locEl = document.getElementById('user-location');
+  const coordEl = document.getElementById('gps-coords');
+  if (locEl) locEl.innerHTML = '<span class="' + dotClass + '"></span>' + line1;
+  if (coordEl) coordEl.textContent = line2;
+}
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(
+      'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&zoom=14',
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    const data = await res.json();
+    const addr = data.address || {};
+    const parts = [
+      addr.village || addr.suburb || addr.neighbourhood || addr.hamlet,
+      addr.county || addr.city_district || addr.town || addr.city
+    ].filter(Boolean);
+    return parts.slice(0,2).join(', ') || 'Your location';
+  } catch(e) { return null; }
+}
+
+function startLiveLocation() {
+  if (!navigator.geolocation) {
+    userLat = 12.5462; userLng = 77.4177;
+    updateMachineDistances(); renderMachines();
+    setLocUI('gps-error-dot', 'Kanakapura (default)', 'GPS not supported on this device');
+    return;
+  }
+
+  setLocUI('gps-searching-dot', 'Getting your location…', 'Requesting GPS permission…');
+
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+
+  let firstFix = true;
+
+  gpsWatchId = navigator.geolocation.watchPosition(
+    async function(pos) {
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      var acc = Math.round(pos.coords.accuracy);
+      var changed = userLat === null || Math.abs(lat - userLat) > 0.00005 || Math.abs(lng - userLng) > 0.00005;
+      userLat = lat; userLng = lng;
+      if (changed || firstFix) { updateMachineDistances(); renderMachines(); }
+      setLocUI('gps-live-dot', 'Live GPS (±' + acc + 'm)',
+        lat.toFixed(5) + '°N, ' + lng.toFixed(5) + '°E');
+      if (firstFix || changed) {
+        firstFix = false;
+        var place = await reverseGeocode(lat, lng);
+        if (place) {
+          setLocUI('gps-live-dot', place, lat.toFixed(5) + '°N, ' + lng.toFixed(5) + '°E  ±' + acc + 'm');
+          if (currentUser) currentUser.village = place;
+        }
+      }
+    },
+    function(err) {
+      var hint = err.code === 1 ? 'Allow location in browser/app settings'
+               : err.code === 3 ? 'GPS timed out — move to open area'
+               : 'Location unavailable';
+      if (userLat === null) {
+        userLat = 12.5462; userLng = 77.4177;
+        updateMachineDistances(); renderMachines();
+        setLocUI('gps-error-dot', 'Kanakapura (fallback)', hint);
+      } else {
+        setLocUI('gps-error-dot', 'GPS signal lost', hint);
+      }
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+  );
+}
+
+// ═══════════════════════════ SCREENS ═══════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (name === 'bookings') renderBookings();
+  if (name === 'map') renderOwnerRequests();
+  if (name === 'profile') updateProfile();
+}
+
+// ═══════════════════════════ HOME ═══════════════════════════
+function setFilter(type, el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  activeFilter = type;
+  renderMachines();
+}
+
+function filterMachines() { renderMachines(); }
+
+function renderMachines() {
+  const q = (document.getElementById('search-inp')?.value || '').toLowerCase();
+  let list = machines.filter(m => {
+    const matchType = activeFilter === 'ALL' || m.type === activeFilter;
+    const matchQ = !q || m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q);
+    return matchType && matchQ;
+  });
+
+  const el = document.getElementById('machine-list');
+  if (!list.length) { el.innerHTML = '<div class="empty">No machines found nearby</div>'; return; }
+
+  el.innerHTML = list.map(m => `
+    <div class="machine-card" onclick="openDetail('${m.id}')">
+      <div class="machine-icon" style="${m.imgData ? 'padding:0;overflow:hidden' : ''}">
+        ${m.imgData ? `<img src="${m.imgData}" style="width:50px;height:50px;object-fit:cover;border-radius:12px">` : m.emoji}
+      </div>
+      <div class="machine-info">
+        <div class="machine-name">${m.name}</div>
+        <div class="machine-owner">Owner: ${m.ownerName}</div>
+        <div class="machine-footer">
+          <div>
+            <div class="machine-price">₹${m.hourlyRate.toLocaleString('en-IN')} / hr</div>
+            <div class="machine-dist">📍 ${fmtDist(m.distanceKm)} from your field · ${m.village || 'Nearby'}</div>
+          </div>
+          <span class="badge ${m.isAvailable ? 'badge-avail' : 'badge-busy'}">
+            ${m.isAvailable ? 'Available' : 'Busy'}
+          </span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════ DETAIL ═══════════════════════════
+function openDetail(id) {
+  currentMachine = machines.find(m => m.id === id);
+  if (!currentMachine) return;
+  const m = currentMachine;
+  document.getElementById('d-name').textContent = m.name;
+  document.getElementById('d-owner').textContent = 'Owner: ' + m.ownerName;
+  document.getElementById('d-hero').textContent = m.emoji;
+  // Condition rating
+  const condMap = { 'Excellent': 5, 'Good': 4, 'Fair': 3, 'Poor': 2 };
+  const rating = condMap[m.condition] || 3;
+  const pct = Math.round((rating / 5) * 100);
+  const barColors = { 5:'#2E7D32', 4:'#388E3C', 3:'#F9A825', 2:'#E64A19', 1:'#B71C1C' };
+  const badgeClasses = { 5:'cond-excellent', 4:'cond-good', 3:'cond-fair', 2:'cond-poor', 1:'cond-poor' };
+  // Stars
+  let starsHtml = '';
+  for (let i = 1; i <= 5; i++) {
+    starsHtml += `<div class="star ${i <= rating ? 'star-filled' : 'star-empty'}">${i <= rating ? '⭐' : '☆'}</div>`;
+  }
+  document.getElementById('d-stars').innerHTML = starsHtml;
+  // Badge
+  const badge = document.getElementById('d-cond-badge');
+  badge.textContent = m.condition;
+  badge.className = 'condition-badge ' + (badgeClasses[rating] || 'cond-fair');
+  // Bar
+  document.getElementById('d-rating-pct').textContent = pct + '%';
+  const bar = document.getElementById('d-rating-bar');
+  bar.style.width = '0%';
+  bar.style.background = barColors[rating] || '#F9A825';
+  setTimeout(() => { bar.style.width = pct + '%'; }, 80);
+  // Service date
+  document.getElementById('d-service-date').textContent = m.lastServiceDate || 'Not recorded';
+  document.getElementById('d-rate').textContent = '₹' + m.hourlyRate + '/hr · ₹' + m.dailyRate + '/day';
+  document.getElementById('d-dist').textContent = fmtDist(m.distanceKm) + ' from your field · ' + (m.village || '');
+  const st = document.getElementById('d-status');
+  st.textContent = m.isAvailable ? 'Available now' : 'Currently busy';
+  st.style.color = m.isAvailable ? 'var(--green-mid)' : 'var(--red-dark)';
+  document.getElementById('btn-book').disabled = !m.isAvailable;
+  document.getElementById('sl-hours').value = 4;
+  document.getElementById('sl-days').value = 1;
+  recalc();
+  showScreen('detail');
+}
+
+function recalc() {
+  const h = parseInt(document.getElementById('sl-hours').value);
+  const d = parseInt(document.getElementById('sl-days').value);
+  document.getElementById('sl-hours-val').textContent = h + ' hrs';
+  document.getElementById('sl-days-val').textContent = d + (d === 1 ? ' day' : ' days');
+  if (currentMachine) {
+    const total = h * d * currentMachine.hourlyRate;
+    document.getElementById('calc-total').textContent = '₹' + total.toLocaleString('en-IN');
+  }
+}
+
+function sendBooking() {
+  if (!currentMachine || !currentUser) return;
+  const h = parseInt(document.getElementById('sl-hours').value);
+  const d = parseInt(document.getElementById('sl-days').value);
+  const total = h * d * currentMachine.hourlyRate;
+  const booking = {
+    id: 'b' + Date.now(),
+    machineName: currentMachine.name,
+    emoji: currentMachine.emoji,
+    renterName: currentUser.name,
+    ownerName: currentMachine.ownerName,
+    hours: h, days: d, totalCost: total,
+    date: new Date().toLocaleString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true }),
+    status: 'PENDING'
+  };
+  bookings.unshift(booking);
+  saveAccountData();
+  renderOwnerRequests();
+  showScreen('bookings');
+}
+
+// ═══════════════════════════ BOOKINGS ═══════════════════════════
+function renderBookings() {
+  const el = document.getElementById('booking-list');
+  const filter = window.activeBookingFilter || 'ALL';
+
+  // Count per status for tab badges
+  const counts = { ALL: bookings.length, PENDING: 0, ACCEPTED: 0, DECLINED: 0 };
+  bookings.forEach(b => { if (counts[b.status] !== undefined) counts[b.status]++; });
+  ['ALL','PENDING','ACCEPTED','DECLINED'].forEach(k => {
+    const el2 = document.getElementById('cnt-' + k.toLowerCase());
+    if (el2) el2.textContent = counts[k];
+  });
+
+  const list = filter === 'ALL' ? bookings : bookings.filter(b => b.status === filter);
+
+  if (!list.length) {
+    const msgs = {
+      ALL: 'No rental requests yet.<br>Browse machines to get started!',
+      PENDING: 'No pending requests.',
+      ACCEPTED: 'No accepted requests yet.',
+      DECLINED: 'No declined requests.'
+    };
+    el.innerHTML = '<div class="empty">' + (msgs[filter] || '') + '</div>';
+    return;
+  }
+
+  el.innerHTML = list.map(b => {
+    const isOwner = currentUser?.role === 'OWNER' || currentUser?.role === 'BOTH';
+    const badgeClass = b.status === 'ACCEPTED' ? 'badge-avail' : b.status === 'DECLINED' ? 'badge-busy' : 'badge-pending';
+    const badgeLabel = b.status === 'ACCEPTED' ? 'Accepted' : b.status === 'DECLINED' ? 'Declined' : 'Pending';
+    const statusStrip = b.status === 'ACCEPTED'
+      ? 'border-left:4px solid #4CAF50'
+      : b.status === 'DECLINED'
+      ? 'border-left:4px solid #FF5722'
+      : 'border-left:4px solid #FFC107';
+    const ownerBtns = isOwner && b.status === 'PENDING' ? `
+      <div class="req-actions">
+        <button class="btn-accept-big" onclick="updateStatus('${b.id}','ACCEPTED')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Accept
+        </button>
+        <button class="btn-decline-big" onclick="updateStatus('${b.id}','DECLINED')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Decline
+        </button>
+      </div>` : '';
+    const initials = b.renterName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    return `
+      <div class="booking-card" style="${statusStrip}">
+        <div class="booking-top">
+          <div style="display:flex;align-items:center;gap:10px;flex:1">
+            <div class="req-avatar" style="width:36px;height:36px;font-size:13px;flex-shrink:0">${initials}</div>
+            <div style="flex:1">
+              <div class="booking-name">${b.emoji} ${b.machineName}</div>
+              <div class="booking-meta">By ${b.renterName} &middot; ${b.hours}hrs &middot; ${b.days}day(s)</div>
+              <div class="booking-meta">${b.date}</div>
+              <div class="booking-total">₹${b.totalCost.toLocaleString('en-IN')}</div>
+            </div>
+          </div>
+          <span class="badge ${badgeClass}">${badgeLabel}</span>
+        </div>
+        ${ownerBtns}
+      </div>`;
+  }).join('');
+}
+
+function setBookingFilter(filter, el) {
+  window.activeBookingFilter = filter;
+  document.querySelectorAll('.booking-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderBookings();
+}
+
+function updateStatus(id, status) {
+  const b = bookings.find(x => x.id === id);
+  if (b) { b.status = status; renderBookings(); renderOwnerRequests(); }
+}
+
+// ═══════════════════════════ OWNER REQUESTS ═══════════════════════════
+const karnatakaLocations = [
+  'Hubli Taluk', 'Gadag Village', 'Haveri District', 'Koppal Taluk',
+  'Raichur Block', 'Bellary Rural', 'Bagalkot Taluk', 'Bidar Village',
+  'Chitradurga Block', 'Davanagere Taluk', 'Tumkur Rural', 'Hassan District',
+  'Mandya Taluk', 'Mysuru Rural', 'Chamarajanagar', 'Kolar Block',
+  'Chikkaballapur', 'Shivamogga Taluk', 'Udupi Village', 'Yadgir District'
+];
+
+function randomLocation() {
+  return karnatakaLocations[Math.floor(Math.random() * karnatakaLocations.length)];
+}
+
+function renderOwnerRequests() {
+  const el = document.getElementById('owner-request-list');
+  const pendingAll = bookings.filter(b => !currentUser || b.ownerName === currentUser.name);
+  if (!pendingAll.length) {
+    el.innerHTML = `<div class="req-empty">🌾<br><br>No incoming requests yet.<br>Requests from farmers will appear here.</div>`;
+    return;
+  }
+  el.innerHTML = pendingAll.map(b => {
+    const initials = b.renterName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const loc = b.location || randomLocation();
+    b.location = loc; // persist for re-renders
+    const isPending = b.status === 'PENDING';
+    const doneHtml = b.status === 'ACCEPTED'
+      ? `<div class="req-done-badge req-done-accept">✓ Request Accepted</div>`
+      : b.status === 'DECLINED'
+      ? `<div class="req-done-badge req-done-decline">✗ Request Declined</div>`
+      : '';
+    const actionsHtml = isPending ? `
+      <div class="req-actions">
+        <button class="btn-accept-big" onclick="ownerAction('${b.id}','ACCEPTED')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Accept
+        </button>
+        <button class="btn-decline-big" onclick="ownerAction('${b.id}','DECLINED')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Decline
+        </button>
+      </div>` : doneHtml;
+    return `
+      <div class="req-card">
+        <div class="req-card-top">
+          <div class="req-avatar">${initials}</div>
+          <div class="req-info">
+            <div class="req-farmer">${b.renterName}</div>
+            <div class="req-machine">${b.emoji} ${b.machineName}</div>
+            <div class="req-location">📍 ${loc}</div>
+          </div>
+        </div>
+        <div class="req-details">
+          <div class="req-detail-pill">⏱ <strong>${b.hours} hrs</strong></div>
+          <div class="req-detail-pill">📅 <strong>${b.days} day(s)</strong></div>
+          <div class="req-detail-pill">💰 <strong>₹${b.totalCost.toLocaleString('en-IN')}</strong></div>
+          <div class="req-detail-pill">🗓 <strong>${b.date}</strong></div>
+        </div>
+        ${actionsHtml}
+      </div>`;
+  }).join('');
+}
+
+function ownerAction(id, status) {
+  const b = bookings.find(x => x.id === id);
+  if (b) {
+    b.status = status;
+    saveAccountData();
+    renderOwnerRequests();
+    renderBookings();
+  }
+}
+
+// ═══════════════════════════ PROFILE ═══════════════════════════
+let addMachineType = 'TRACTOR';
+let machineImgData = null;
+let avatarImgData = null;
+
+function updateProfile() {
+  if (!currentUser) return;
+  const initials = currentUser.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const av = document.getElementById('prof-avatar');
+  if (avatarImgData) {
+    av.innerHTML = `<img src="${avatarImgData}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    av.innerHTML = `<span id="prof-initials">${initials}</span>`;
+  }
+  document.getElementById('prof-name').textContent = currentUser.name;
+  document.getElementById('prof-phone').textContent = currentUser.phone.replace('+91','');
+  const roleLabel = currentUser.role === 'OWNER' ? 'OWNER' : currentUser.role === 'BOTH' ? 'BOTH' : 'RENTER';
+  document.getElementById('prof-role').textContent = roleLabel + ' · Member since 2026';
+  document.getElementById('edit-name').value = currentUser.name;
+  document.getElementById('edit-phone').value = currentUser.phone.replace('+91','');
+  // stats
+  const rented = bookings.filter(b => b.renterName === currentUser.name).length;
+  const added = machines.filter(m => m.ownerName === currentUser.name).length;
+  document.getElementById('stat-rented').textContent = rented;
+  document.getElementById('stat-added').textContent = added;
+  document.getElementById('stat-payments').textContent = rented;
+  renderPaymentHistory();
+}
+
+function saveProfile() {
+  if (!currentUser) return;
+  const name = document.getElementById('edit-name').value.trim();
+  const phone = document.getElementById('edit-phone').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+  currentUser.name = name;
+  currentUser.phone = '+91' + phone;
+  // Also update the stored user record so sign-in reflects new name
+  const users = getUsers();
+  if (users[currentUser.username]) {
+    users[currentUser.username].name = name;
+    users[currentUser.username].phone = '+91' + phone;
+    saveUsers(users);
+  }
+  saveAccountData();
+  updateProfile();
+  const btn = document.querySelector('.btn-save-profile');
+  btn.textContent = '✓ Saved!';
+  setTimeout(() => btn.textContent = 'Save profile', 1500);
+}
+
+function triggerAvatarUpload() {
+  document.getElementById('avatar-file-input').click();
+}
+
+function handleAvatarChange(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    avatarImgData = ev.target.result;
+    const av = document.getElementById('prof-avatar');
+    av.innerHTML = `<img src="${avatarImgData}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    saveAccountData();
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderPaymentHistory() {
+  const el = document.getElementById('payment-history-list');
+  const myBookings = bookings.filter(b => b.renterName === currentUser?.name);
+  if (!myBookings.length) {
+    el.innerHTML = '<div class="empty" style="padding:16px 0">No payments yet.</div>'; return;
+  }
+  el.innerHTML = myBookings.map(b => {
+    const badgeClass = b.status === 'ACCEPTED' ? 'badge-completed' : b.status === 'DECLINED' ? 'badge-failed' : 'badge-pending';
+    const badgeLabel = b.status === 'ACCEPTED' ? 'Completed' : b.status === 'DECLINED' ? 'Failed' : 'Pending';
+    return `<div class="payment-card">
+      <div class="payment-top">
+        <div class="payment-name">Rental request for ${b.machineName}</div>
+        <span class="badge ${badgeClass}">${badgeLabel}</span>
+      </div>
+      <div class="payment-meta">Amount: ₹${b.totalCost.toLocaleString('en-IN')}</div>
+      <div class="payment-meta">${b.date}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════ ADD MACHINE HELPERS ═══════════════════════════
+function selectAddType(type, el) {
+  addMachineType = type;
+  document.querySelectorAll('.add-type-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function triggerMachineImg() {
+  document.getElementById('machine-img-input').click();
+}
+
+function handleMachineImg(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    machineImgData = ev.target.result;
+    document.getElementById('img-preview').src = machineImgData;
+    document.getElementById('img-preview').style.display = 'block';
+    document.getElementById('img-placeholder').style.display = 'none';
+    document.getElementById('remove-img-btn').style.display = 'block';
+    document.getElementById('img-upload-zone').style.cursor = 'default';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeMachineImg() {
+  machineImgData = null;
+  document.getElementById('img-preview').style.display = 'none';
+  document.getElementById('img-placeholder').style.display = 'block';
+  document.getElementById('remove-img-btn').style.display = 'none';
+  document.getElementById('machine-img-input').value = '';
+}
+
+// ═══════════════════════════ ADD MACHINE ═══════════════════════════
+function addMachine() {
+  const name = document.getElementById('f-mname').value.trim();
+  const brand = document.getElementById('f-brand').value.trim();
+  const model = document.getElementById('f-model').value.trim();
+  const hourly = parseFloat(document.getElementById('f-hourly').value) || 0;
+  const daily = parseFloat(document.getElementById('f-daily').value) || 0;
+  if (!name || !hourly) { alert('Please fill in machine name and hourly rate.'); return; }
+  const emojis = { TRACTOR:'🚜', TILLER:'⚙️', HARVESTER:'🌾', SPRAYER:'💧' };
+  const newM = {
+    id: 'm' + Date.now(), emoji: emojis[addMachineType] || '🚜',
+    name: name, brand, model, type: addMachineType,
+    ownerName: currentUser?.name || 'You',
+    ownerPhone: currentUser?.phone || '', hourlyRate: hourly, dailyRate: daily,
+    distanceKm: 0.0, isAvailable: true, condition: 'Good',
+    lastServiceDate: 'Recently', village: randomLocation(),
+    imgData: machineImgData,
+    _userAdded: true,
+    lat: userLat != null ? userLat + (Math.random()-0.5)*0.04 : 12.5462,
+    lng: userLng != null ? userLng + (Math.random()-0.5)*0.04 : 77.4177
+  };
+  if (userLat != null) newM.distanceKm = parseFloat(haversineKm(userLat, userLng, newM.lat, newM.lng).toFixed(1));
+  machines.unshift(newM);
+  saveAccountData();
+  // reset form
+  ['f-mname','f-brand','f-model','f-hourly','f-daily','f-location','f-desc'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  removeMachineImg();
+  alert('✅ Machine listed successfully!');
+  showScreen('home');
+  renderMachines();
+}
+
+// ═══════════════════════════ PWA SETUP ═══════════════════════════
+
+(function() {
+  // ── 1. Generate SVG icon as data URI ──
+  const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="110" fill="#2D6A2D"/>
+    <text x="256" y="340" font-size="280" text-anchor="middle" font-family="Arial">🚜</text>
+    <text x="256" y="430" font-size="72" text-anchor="middle" font-family="Arial,sans-serif" fill="white" font-weight="bold">YANTRA</text>
+  </svg>`;
+  const iconDataUri = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(iconSvg)));
+
+  // ── 2. Inject Web App Manifest as blob URL ──
+  const manifest = {
+    name: "Namma-Yantra Share",
+    short_name: "Namma-Yantra",
+    description: "Peer-to-peer farm machinery rental",
+    start_url: location.href,
+    display: "standalone",
+    orientation: "portrait",
+    background_color: "#2D6A2D",
+    theme_color: "#2D6A2D",
+    lang: "en",
+    icons: [
+      { src: iconDataUri, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
+      { src: iconDataUri, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+    ],
+    categories: ["agriculture", "business", "utilities"],
+    screenshots: []
+  };
+  // use data URI so Android can read it
+  const manifestUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
+  document.getElementById('pwa-manifest').href = manifestUrl;
+  document.getElementById('apple-icon').href = iconDataUri;
+
+  // ── 3. Register Service Worker (inline blob) ──
+  const swCode = `
+    const CACHE = 'namma-yantra-v1';
+    const FONTS = [
+      'https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500&display=swap'
+    ];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(FONTS).catch(()=>{})));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      ));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      if (e.request.url.startsWith('blob:')) return;
+      e.respondWith(
+        caches.match(e.request).then(cached => {
+          if (cached) return cached;
+          return fetch(e.request).then(res => {
+            if (res && res.status === 200 && res.type !== 'opaque') {
+              const clone = res.clone();
+              caches.open(CACHE).then(c => c.put(e.request, clone));
+            }
+            return res;
+          }).catch(() => cached);
+        })
+      );
+    });
+  `;
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+    try {
+      const swBlob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl, { scope: './' })
+        .then(() => console.log('SW registered'))
+        .catch(() => {}); // silently ignore — app works fine without SW
+    } catch(e) { /* ignore */ }
+  }
+})();
+
+// ── PWA Install prompt logic ──
+let deferredPrompt = null;
+let bannerDismissed = localStorage.getItem('pwa_banner_dismissed') === '1';
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!bannerDismissed && !window.matchMedia('(display-mode: standalone)').matches) {
+    setTimeout(() => {
+      document.getElementById('pwa-install-banner').classList.add('show');
+    }, 2000);
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-install-banner').classList.remove('show');
+  showToast('✅ App installed successfully!');
+  deferredPrompt = null;
+});
+
+function triggerInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        document.getElementById('pwa-install-banner').classList.remove('show');
+      }
+      deferredPrompt = null;
+    });
+  } else {
+    showInstallGuide();
+  }
+}
+
+function dismissBanner() {
+  document.getElementById('pwa-install-banner').classList.remove('show');
+  localStorage.setItem('pwa_banner_dismissed', '1');
+  bannerDismissed = true;
+}
+
+function showInstallGuide() {
+  document.getElementById('pwa-install-banner').classList.remove('show');
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isSamsung = /samsungbrowser/.test(ua);
+  const isFirefox = /firefox/.test(ua);
+  const isPC = !/android|iphone|ipad|ipod/.test(ua);
+
+  let steps = [];
+  let subtitle = '';
+
+  if (isIOS) {
+    subtitle = 'Install on iPhone / iPad using Safari:';
+    steps = [
+      'Open this page in <strong>Safari</strong> (not Chrome)',
+      'Tap the <strong>Share button</strong> (□↑) at the bottom of the screen',
+      'Scroll down and tap <strong>"Add to Home Screen"</strong>',
+      'Tap <strong>"Add"</strong> — the app icon will appear on your home screen!'
+    ];
+  } else if (isPC) {
+    subtitle = 'Install on Windows / Mac using Chrome or Edge:';
+    steps = [
+      'Open this page in <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong>',
+      'Click the <strong>install icon (⊕)</strong> in the address bar on the right',
+      'Click <strong>"Install"</strong> in the popup',
+      'The app opens like a native desktop app — find it in your Start menu or Applications!'
+    ];
+  } else if (isSamsung) {
+    subtitle = 'Install on Samsung Internet:';
+    steps = [
+      'Tap the <strong>menu (☰)</strong> at the bottom',
+      'Tap <strong>"Add page to"</strong>',
+      'Tap <strong>"Home screen"</strong>',
+      'Tap <strong>"Add"</strong> to confirm!'
+    ];
+  } else if (isFirefox) {
+    subtitle = 'Install on Android using Chrome (recommended):';
+    steps = [
+      'Open this page in <strong>Google Chrome</strong>',
+      'Tap the <strong>3-dot menu (⋮)</strong> at the top right',
+      'Tap <strong>"Add to Home screen"</strong>',
+      'Tap <strong>"Add"</strong> to confirm!'
+    ];
+  } else {
+    subtitle = 'Install on Android using Chrome:';
+    steps = [
+      'Tap the <strong>3-dot menu (⋮)</strong> at the top right of Chrome',
+      'Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>',
+      'Tap <strong>"Install"</strong> or <strong>"Add"</strong> to confirm',
+      'The app icon will appear on your home screen — tap it to launch! 🎉'
+    ];
+  }
+
+  document.getElementById('pwa-guide-sub').textContent = subtitle;
+  document.getElementById('pwa-guide-steps').innerHTML = steps.map((s, i) => `
+    <div class="pwa-guide-step">
+      <div class="pwa-step-num">${i + 1}</div>
+      <div class="pwa-step-text">${s}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('pwa-guide-overlay').classList.add('show');
+}
+
+function closeGuide() {
+  document.getElementById('pwa-guide-overlay').classList.remove('show');
+}
+</script>
+</body>
+</html>
